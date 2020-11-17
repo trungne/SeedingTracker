@@ -1,8 +1,9 @@
 import mysql.connector
 mydb = mysql.connector.connect(
         host="localhost",
-        user="root",
-        password=r"123zxc",
-        database = "mydatabase",
+        user="trung",
+        passwd=r"123zxc",
+        db = "mydatabase",
+        port=3306,
         auth_plugin="mysql_native_password"
     )

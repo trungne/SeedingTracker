@@ -42,7 +42,10 @@ class Reaction:
         self.entry['validatecommand'] = (self.entry.register(testVal),'%P','%d') # set constraint to only int
 
         # tk.Label object
+        
+        self.label_image = ImageTk.PhotoImage(Image.open(f"./icons/{self.name}.png").resize((58, 58)))
         self.label = label
+        self.label.configure(image=self.label_image)
         
     def get_name(self):
         return self.name
@@ -99,21 +102,6 @@ class Manual(tk.Frame):
         self.twitter_icon = ImageTk.PhotoImage(Image.open("./icons/twitter.png").resize((58, 58)))
         self.instagram_icon = ImageTk.PhotoImage(Image.open("./icons/instagram.png").resize((58, 58)))
 
-        self.like_img = ImageTk.PhotoImage(Image.open("./icons/like.png"))
-        self.heart_img = ImageTk.PhotoImage(Image.open("./icons/heart.png"))
-        self.care_img = ImageTk.PhotoImage(Image.open("./icons/care.png"))
-        self.haha_img = ImageTk.PhotoImage(Image.open("./icons/haha.png"))
-        self.wow_img = ImageTk.PhotoImage(Image.open("./icons/wow.png"))
-        self.sad_img = ImageTk.PhotoImage(Image.open("./icons/sad.png"))
-        self.angry_img = ImageTk.PhotoImage(Image.open("./icons/angry.png"))
-        self.comment_img = ImageTk.PhotoImage(Image.open("./icons/comment.png").resize((58, 58)))
-        self.share_img = ImageTk.PhotoImage(Image.open("./icons/share.png").resize((58, 58)))
-
-        self.twitter_cmt_img = ImageTk.PhotoImage(Image.open("./icons/twitter_cmt.png").resize((58, 58)))
-        self.twitter_retweet_img = ImageTk.PhotoImage(Image.open("./icons/twitter_retweet.png").resize((58, 58)))
-        self.twitter_heart_img = ImageTk.PhotoImage(Image.open("./icons/twitter_heart.png").resize((58, 58)))
-
-        self.instagram_cmt_img = ImageTk.PhotoImage(Image.open("./icons/instagram_cmt.png").resize((58, 58)))
         '''Default widgets'''
         # radiobuttons for platfrom choices
         self.platform_choice = tk.IntVar()
@@ -139,63 +127,62 @@ class Manual(tk.Frame):
         self.post_id_label.grid(row=2, column=0, pady=10, sticky='nesw')
         self.post_id_entry.grid(row=2, column=1, pady=10, columnspan=10, sticky='nesw')
         
-
         self.post_id_status.grid(row=3, columnspan=10)
         
 
         '''Reaction widgets'''
         # facebook
-        self.likes = Reaction("likes", 
+        self.like = Reaction("fb_like", 
                         tk.Entry(self), 
-                        tk.Label(self, image=self.like_img))
-        self.heart = Reaction("heart", 
+                        tk.Label(self))
+        self.heart = Reaction("fb_heart", 
                         tk.Entry(self),
-                        tk.Label(self, image=self.heart_img))
-        self.care = Reaction("care",
+                        tk.Label(self))
+        self.care = Reaction("fb_care",
                         tk.Entry(self),
-                        tk.Label(self, image=self.care_img))
-        self.haha = Reaction("haha",
+                        tk.Label(self))
+        self.haha = Reaction("fb_haha",
                         tk.Entry(self),
-                        tk.Label(self, image=self.haha_img))
-        self.wow = Reaction("wow",
+                        tk.Label(self))
+        self.wow = Reaction("fb_wow",
                         tk.Entry(self),
-                        tk.Label(self, image=self.wow_img))
-        self.sad = Reaction("sad",
+                        tk.Label(self))
+        self.sad = Reaction("fb_sad",
                         tk.Entry(self),
-                        tk.Label(self, image=self.sad_img))
-        self.angry = Reaction("angry",
+                        tk.Label(self))
+        self.angry = Reaction("fb_angry",
                         tk.Entry(self),
-                        tk.Label(self, image=self.angry_img))
-        self.comments = Reaction("comments",
+                        tk.Label(self))
+        self.comment = Reaction("fb_comment",
                         tk.Entry(self),
-                        tk.Label(self, image=self.comment_img))
-        self.share = Reaction("share",
+                        tk.Label(self))
+        self.share = Reaction("fb_share",
                         tk.Entry(self),
-                        tk.Label(self, image=self.share_img))
+                        tk.Label(self))
         
         # twitter
-        self.twitter_cmt = Reaction("twitter_cmt",
+        twitter_cmt = Reaction("twitter_cmt",
                         tk.Entry(self),
-                        tk.Label(self, image=self.twitter_cmt_img))
-        self.twitter_retweet = Reaction("twitter_retweet",
+                        tk.Label(self))
+        twitter_retweet = Reaction("twitter_retweet",
                         tk.Entry(self),
-                        tk.Label(self, image=self.twitter_retweet_img))
-        self.twitter_heart = Reaction("twitter_heart",
+                        tk.Label(self))
+        twitter_heart = Reaction("twitter_heart",
                         tk.Entry(self),
-                        tk.Label(self, image=self.twitter_heart_img))
+                        tk.Label(self))
        
         # instagram
         self.instagram_cmt = Reaction("instagram_cmt",
                         tk.Entry(self),
-                        tk.Label(self, image=self.instagram_cmt_img))
+                        tk.Label(self))
         self.instagram_heart = Reaction("instagram_heart",
                         tk.Entry(self),
-                        tk.Label(self, image=self.twitter_heart_img))
+                        tk.Label(self))
         
         # lists of reactions
         self.current_reactions = []
-        self.facebook_reactions = [self.likes, self.heart, self.care, self.haha, self.wow, self.sad, self.angry, self.comments, self.share]
-        self.twitter_reactions = [self.twitter_cmt, self.twitter_retweet, self.twitter_heart]
+        self.facebook_reactions = [self.like, self.heart, self.care, self.haha, self.wow, self.sad, self.angry, self.comment, self.share]
+        self.twitter_reactions = [twitter_cmt, twitter_retweet, twitter_heart]
         self.instagram_reactions = [self.instagram_cmt, self.instagram_heart]
 
         # update button to update data to database
