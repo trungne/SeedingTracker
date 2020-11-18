@@ -3,6 +3,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+#backup/test files
+backup.txt
+test.py
+test?.py
+
 # C extensions
 *.so
 
@@ -100,7 +105,6 @@ __pypackages__/
 # Celery stuff
 celerybeat-schedule
 celerybeat.pid
-
 # SageMath parsed files
 *.sage.py
 
