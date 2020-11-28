@@ -1,6 +1,10 @@
 import mysql.connector
 from mysql.connector import errorcode
+import time
+localtime = time.asctime(time.localtime(time.time()))
+print(localtime)
 
+# https://www.programiz.com/python-programming/datetime/current-time
 try:
     cnx = mysql.connector.connect(
         host="localhost",
