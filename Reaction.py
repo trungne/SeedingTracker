@@ -2,28 +2,6 @@ import tkinter as tk
 from PIL import ImageTk, Image
 from constants import *
 
-def show_widgets_in_consecutive_grids(list_of_widgets, row=0):
-    total_rows = len(list_of_widgets) + row
-
-    index = 0
-    for each_row in range(row, total_rows):
-        if type(list_of_widgets[index]) == list: # if an item is a list
-            for i in range(len(list_of_widgets[index])): # display the list in ONE ROW
-                list_of_widgets[index][i].grid(row=each_row, sticky="nsew", column=i, pady=DEFAULT_PAD_Y)
-        
-        elif type(list_of_widgets[index]).__name__ == "Reaction":
-            list_of_widgets[index].display_reaction(each_row)
-        # sticky="nsew"
-        else:
-            list_of_widgets[index].grid(row=each_row, sticky="nsew", columnspan=MAX_COLUMN_RANGE, pady=DEFAULT_PAD_Y)
-        index += 1
-    return total_rows + row
-
-def testVal(inStr,acttyp):
-    if acttyp == '1': #insert
-        if not inStr.isdigit():
-            return False
-    return True
 
 class Reaction:
     def __init__(self, name, root):
@@ -39,8 +17,13 @@ class Reaction:
         self.label = tk.Label(root, image=self.label_image)
 
     def get_count(self):
-        print(f"{self.name}: ", end= '')
         return self.entry.get()
+
+    def get_name(self):
+        return self.name
+    
+    def get_value_pair(self):
+        return {self.name: self.entry.get()}
 
     def display_reaction(self, cur_row, column=0):
         self.label.grid(row=cur_row, column=column, padx=29.5, sticky="nsew", pady=DEFAULT_PAD_Y)
@@ -59,7 +42,7 @@ class Reaction_frame(tk.Frame):
 
         self.fb_reactions_list = [Reaction("fb_like", self), Reaction("fb_heart", self), Reaction("fb_care", self), 
                                 Reaction("fb_haha", self), Reaction("fb_wow", self), Reaction("fb_sad", self), 
-                                Reaction("fb_angry", self), Reaction("fb_comment", self), Reaction("fb_share", self)]
+                                Reaction("fb_angry", self), Reaction("fb_cmt", self), Reaction("fb_share", self)]
  
         self.twitter_reactions_list = [Reaction("twitter_cmt", self), Reaction("twitter_retweet", self), Reaction("twitter_heart", self)]
 
@@ -71,22 +54,26 @@ class Reaction_frame(tk.Frame):
             "Instagram": self.instagram_reactions_list
         }
 
-        self.current_platform = None
-        
-    def destroy_current_reactions_list(self, platform):
-        pass
-        
+        # default platform is Facebook
+        self.current_platform = "Facebook"
 
-    def set_reactions_list(self, platform):
-        if not self.current_platform:
-            pass
-        elif platform != self.current_platform:
-            for reaction in self.current_reactions[self.current_platform]:
-                reaction.destroy_reaction()
-
-        self.current_platform = platform
-
+        # show platform
         show_widgets_in_consecutive_grids(self.current_reactions[self.current_platform])
 
+    def destroy_current_reactions_list(self, platform):
+        for reaction in self.current_reactions[self.current_platform]:
+            reaction.destroy_reaction()
+
+    def set_reactions_list(self, platform):
+        if self.current_platform != platform:
+            self.destroy_current_reactions_list(self.current_platform)
+            self.current_platform = platform
+            show_widgets_in_consecutive_grids(self.current_reactions[self.current_platform]) 
+
     def get_reactions_list(self):
-        return self.current_reactions[self.current_platform]
+        all_reactions = self.current_reactions[self.current_platform]
+        list_of_valid_reactions = []
+        for reaction in all_reactions:
+            if reaction.get_count():
+                list_of_valid_reactions.append(reaction)
+        return list_of_valid_reactions
