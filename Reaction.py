@@ -35,7 +35,6 @@ class Reaction:
 
 
 class Reaction_frame(tk.Frame):
-
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
@@ -60,6 +59,11 @@ class Reaction_frame(tk.Frame):
         # show platform
         show_widgets_in_consecutive_grids(self.current_reactions[self.current_platform])
 
+    def __iter__(self):
+        pass
+    def __next__(self):
+        pass
+    
     def destroy_current_reactions_list(self, platform):
         for reaction in self.current_reactions[self.current_platform]:
             reaction.destroy_reaction()
@@ -70,10 +74,13 @@ class Reaction_frame(tk.Frame):
             self.current_platform = platform
             show_widgets_in_consecutive_grids(self.current_reactions[self.current_platform]) 
 
-    def get_reactions_list(self):
+    def get_valid_reactions_list(self):
         all_reactions = self.current_reactions[self.current_platform]
         list_of_valid_reactions = []
+        
+        # only get reactions that have input
         for reaction in all_reactions:
             if reaction.get_count():
                 list_of_valid_reactions.append(reaction)
+        
         return list_of_valid_reactions

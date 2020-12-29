@@ -1,5 +1,32 @@
+import mysql_queries
+
+# convert a list of records into a dictionary of records
+def convert_list_to_dict(records):
+    my_dict = {}
+    for each_user in records:
+        account_id = str(each_user[0])
+        password = str(each_user[1])
+        my_dict[account_id] = password
+    return my_dict
+
+# get all usernames and passwords from the database
+def get_credentials():
+    connection = mysql_queries.connect_to_database(DATABASE)
+    mycursor = connection.cursor()
+
+    select_query = f"SELECT account_id, password FROM Employee"
+    mycursor.execute(select_query)
+
+    records = mycursor.fetchall() # return a list of records
+    all_user_information = convert_list_to_dict(records) # convert the list to dict
+    mycursor.close()
+    connection.close()
+    return all_user_information
+
 MAX_COLUMN_RANGE = 10
 DEFAULT_PAD_Y = 4
+DATABASE = "SeedingTracker"
+ALL_CREDENTIALS_IN_DATABASE = get_credentials()
 
 
 def show_widgets_in_consecutive_grids(list_of_widgets, row=0):
@@ -25,3 +52,4 @@ def testVal(inStr,acttyp):
         if not inStr.isdigit():
             return False
     return True
+

@@ -4,9 +4,39 @@ from PIL import ImageTk, Image
 
 # other python files
 from Reaction import *
-from constants import *
+import constants
 import mysql_queries
 import user_info
+
+# ask for user confirmation
+
+class Confirmation:
+    def __init__(self, master, confirm_text):
+        self.window = tk.Toplevel(master)
+        self.window.resizable(False, False)
+        self.window.title("Warning!")
+        self.confirmation = False
+
+        self.label = tk.Label(self.window, text=confirm_text)
+        self.no_button = tk.Button(self.window, text="No", command=self.no)
+        self.yes_button = tk.Button(self.window, text="Yes", command=self.yes)
+        
+        self.label.grid(row=0, column=0, sticky="nsew", columnspan=2)
+        self.no_button.grid(row=1, column=0)
+        self.yes_button.grid(row=1, column=1)
+
+    def yes(self):
+        self.confirmation = True
+    def no(self):
+        self.confirmation = False
+
+    def show(self):
+        self.window.deiconify()
+        self.window.wait_window()
+        return self.confirmation
+def get_confirmation(master, text):
+    Confirmation(master, text)
+    return get_confirmation
 
 class User_options(tk.Frame):
     def __init__(self, parent):
@@ -117,10 +147,13 @@ class Delete_menu(tk.Frame):
         if new_platform != self.platform:
             # do something
             self.platform = new_platform
-    def delete_post(self):
-        mysql_queries.delete_post(self.platform, int(self.post_id_entry.get()))
-class Query_menu(tk.Frame):
 
+    def delete_post(self):
+        # pop up windows to ask for user last confirmation
+        get_confirmation(self, "Are you sure?")
+        mysql_queries.delete_post(self.platform, self.post_id_entry.get())
+
+class Query_menu(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
         self.name = "Query"
@@ -131,19 +164,24 @@ class Query_menu(tk.Frame):
         self.post_id_entry = tk.Entry(self)
         self.post_id_label = tk.Label(self, text="Post ID: ")
         self.query_button = tk.Button(self, text="Query")
+        
+        # TODO: create query features!
+        
+        
         self.widgets_list = [self.instruction,
                             [self.post_id_label, self.post_id_entry],
                             self.query_button]
-
+        
         # show widgets
         show_widgets_in_consecutive_grids(self.widgets_list)
     def get_name(self):
-            return self.name   
+        return self.name   
 
     def change_platform(self, new_platform):
         if new_platform != self.platform:
             # do something
             self.platform = new_platform
+
 class Update_menu(tk.Frame):
     
     def __init__(self, parent):
@@ -162,9 +200,9 @@ class Update_menu(tk.Frame):
         self.post_id_entry = tk.Entry(self)
         self.post_id_label = tk.Label(self, text="Post ID: ")
 
-        # name of the poster
-        self.poster_label = tk.Label(self, text="Name: ")
-        self.poster_entry = tk.Entry(self)
+        # # name of the poster
+        # self.poster_label = tk.Label(self, text="Name: ")
+        # self.poster_entry = tk.Entry(self)
         
         # reaction widgets
         self.reactions_frame = Reaction_frame(self)
@@ -175,44 +213,42 @@ class Update_menu(tk.Frame):
         '''Show default widgets'''
         self.default_widgets_list = [self.instruction,
                                     [self.post_id_label, self.post_id_entry],
-                                    [self.poster_label, self.poster_entry],
                                     self.reactions_frame,
                                     self.update_button]
 
         show_widgets_in_consecutive_grids(self.default_widgets_list)
 
-    def update_engagement_data(self):
-        post_id = self.post_id_entry.get()
-        post_id_exists = self.check_post_id_status(post_id)
-        employee_name = self.poster_entry.get()
-
-        to_be_updated_columns = [post_id, employee_name]
-        to_be_updated_columns.extend(self.reactions_frame.get_reactions_list())
-        
-        table = self.platform
-
-        if not post_id or not employee_name or not to_be_updated_columns:
-            self.instruction.config(text="Invalid input(s)!") # add more meaningful error message
-        else:
-            if post_id_exists:
-                mysql_queries.update_values(table, to_be_updated_columns)
-                self.instruction.config(text="Successful updates!")
-            else:
-                mysql_queries.insert_values(table, to_be_updated_columns)
-                self.instruction.config(text="Successful insertion!")
-
-    """a function to check if the entered post id already exists in the database"""
-    ## TODO: return false values
-    def check_post_id_status(self, entered_post_id):
-        list_of_post_ids = mysql_queries.get_existing_post_ids(self.platform)
-        if int(entered_post_id) in list_of_post_ids:
-            # print("This will update your existing record")
-            # update function
-            return True
-        else:
-            # print("This will create a new record!")
-            # create a new record
+    def validate_inputs(self):
+        if not self.post_id_entry.get():
+            self.instruction.config(text="Please enter the post id!") # add more meaningful error message
             return False
+        elif not self.reactions_frame.get_valid_reactions_list():
+            self.instruction.config(text="Please enter engagement data!") # add more meaningful error message
+            return False
+        else:
+            return True
+
+    def update_engagement_data(self):
+        # check if user has entered valid inputs
+        if not self.validate_inputs():
+            return None
+        
+        # get a list of reactions that will be updated/inserted values
+        to_be_updated_reactions = self.reactions_frame.get_valid_reactions_list()
+        
+        # assign platform/post_id/employee_name to table for readability
+        table = self.platform
+        post_id = self.post_id_entry.get()
+        employee_name = user_info.current_user.get_name()
+
+        # if post id exists, UPDATE the values
+        if mysql_queries.post_id_is_in_table(post_id, table):
+            mysql_queries.update_values(table, post_id, employee_name, to_be_updated_reactions)
+            self.instruction.config(text="Successful updates!")
+        # if post id DOES NOT exists, INSERT the values
+        else:
+            mysql_queries.insert_values(table, post_id, employee_name, to_be_updated_reactions)
+            self.instruction.config(text="Successful insertion!")
 
     def get_name(self):
         return self.name
@@ -222,6 +258,8 @@ class Update_menu(tk.Frame):
             self.platform = new_platform
             self.reactions_frame.set_reactions_list(new_platform)
 
+
+# This is a place to init user and database
 class Login_menu(tk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
@@ -249,6 +287,9 @@ class Login_menu(tk.Frame):
                             self.login_button,
                             self.login_status]
 
+        """ bind the event (enter key being press) with a function (self.login)
+        If the event happens, it will automatically trigger the function/        
+        """
         self.password.bind('<Return>', self.login)
         self.password.bind('<KP_Enter>', self.login)
         self.login_id.bind('<Return>', self.login)
@@ -257,16 +298,23 @@ class Login_menu(tk.Frame):
         show_widgets_in_consecutive_grids(self.widgets_list)
 
         self.count = 1
+        
+    """login is a function that check if 
+    the pair of username and passwork entered 
+    are in the database
+    """
     def login(self, event=None):
-        name = self.login_id.get()
+        account_id = self.login_id.get()
         password = self.password.get()
         
-        credentials = user_info.get_credentials()
-
-        if name in credentials and password == credentials[name]:
+        if (account_id in constants.ALL_CREDENTIALS_IN_DATABASE and 
+            password == constants.ALL_CREDENTIALS_IN_DATABASE[account_id]):
+            # display the result - successful login 
             self.login_status.config(text="Successful")
+
             # load database at this point
-            user_info.current_user = user_info.create_user(name)
+            user_info.current_user = user_info.create_user(account_id)
+
             self.parent.change(User_options)
         else:
             if self.count >= 3:
@@ -295,7 +343,7 @@ def main():
     root.resizable(False, False)
     root.title("Seeding Tracker")
 
-    my_programe = Main_frame(root)
+    Main_frame(root)
     
     root.mainloop()
 

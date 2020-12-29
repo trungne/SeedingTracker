@@ -1,11 +1,16 @@
 import mysql.connector
 import time
-from constants import *
-import user_info
+import constants
 
 localtime = time.asctime(time.localtime(time.time()))
 print(localtime)
 
+# convert a list to a comma-separated string.
+"""
+This function is used to create mysql insert/update statement
+Input: a list of items to be updated or inserted
+Output: a string which contains all the items, each of which is separated by a comma
+"""
 def list_to_cs_string(lst):
     cs_string = ""
     length = len(lst)
@@ -16,17 +21,19 @@ def list_to_cs_string(lst):
             cs_string += f"{str(lst[i])}, "
     return cs_string
 
-def platform_post_ID(table):
-    if table == "Facebook":
-        return "fb_post_ID"
-    elif table == "Twitter":
-        return "twitter_post_ID"
-    elif table == "Instagram":
-        return "instagram_post_ID"
-
 # https://www.programiz.com/python-programming/datetime/current-time
 
 # https://stackoverflow.com/questions/5504340/python-mysqldb-connection-close-vs-cursor-close
+
+def mysql_varchar(value):
+    return f"'{value}'"
+
+"""
+This function is to connect to the database in mysql
+Input: the database name
+Output: a connection object to the database
+The connection object is then used to create a cursor which will execute mysql statement
+"""
 def connect_to_database(db):
     try:
         connection = mysql.connector.connect(
@@ -51,100 +58,154 @@ def connect_to_database(db):
 
     return connection
 
-# return a list of existing post id of a platform
+# return a list of existing post id of a platform a.k.a Facebook, Twitter, Instagram
 # Note: table = platform
 def get_existing_post_ids(table):
     list_of_ids = []
-    connection = connect_to_database("SeedingTracker1")
-    # connection = connect_to_database(user_info.current_user.database)
+    connection = connect_to_database(constants.DATABASE)
+    
     mycursor = connection.cursor()
-    query_statement = f"SELECT {platform_post_ID(table)} FROM {table}"
+
+    # select ALL post ids
+    query_statement = f"SELECT post_id FROM {table}"
+
     mycursor.execute(query_statement)
 
     records = mycursor.fetchall()
+
     length = len(records)
     for i in range(length):
         list_of_ids.append(records[i][0])
 
+    # close the connection
     mycursor.close()
     connection.close()
+
     return list_of_ids
+
 
 def query_post(table, post_id):
     pass
 
 def delete_post(table, post_id):
-    connection = connect_to_database(user_info.current_user.database)
+    # connect to the database
+    connection = connect_to_database(constants.DATABASE)
     mycursor = connection.cursor()
 
-    delete_stmt = f"DELETE FROM {table} WHERE {platform_post_ID(table)} = {post_id}"
+    # create the delete statement
+    delete_stmt = f"DELETE FROM {table} WHERE post_id = {mysql_varchar(post_id)}"
+    
+    # execute the statement
     mycursor.execute(delete_stmt)
     connection.commit()
     
-    # print(delete_stmt)
-
+    # close the connection
     mycursor.close()
     connection.close()
 
-def update_values(table, to_be_updated_reactions):
-    connection = connect_to_database(user_info.current_user.database)
+def get_employee_name(table, post_id):
+    # connect to the database
+    connection = connect_to_database(constants.DATABASE)
     mycursor = connection.cursor()
 
-    post_id = to_be_updated_reactions[0]
-    employee_name = to_be_updated_reactions[1]
+    # create the query statement to find the name of the employee of a post id
+    query = f"SELECT employee_name FROM {table} WHERE post_id = {mysql_varchar(post_id)}"
+    
+    # execute the query
+    mycursor.execute(query)
+
+    # catch the return value
+    employee_name = mycursor.fetchone() # employee_name is a tuple   
+
+    # close the connection
+    mycursor.close()
+    connection.close()
+
+    # only return the name, which is the first item in the tuple
+    return employee_name[0]
+
+def update_values(table, post_id, employee_name, to_be_updated_reactions):
+    # total items in the provided list
     length = len(to_be_updated_reactions)
 
-    # start at 2 to skip updating post ip and employee's name
-    for i in range(2, length):
+    # connect to the database
+    connection = connect_to_database(constants.DATABASE)
+    mycursor = connection.cursor()
+
+    # only update employee name if the current name and the new name are different
+    if employee_name != get_employee_name(table, post_id):
+        update_stmt = f"UPDATE {table} SET employee_name = {mysql_varchar(employee_name)} WHERE post_id = {mysql_varchar(post_id)}"
+        mycursor.execute(update_stmt)
+        connection.commit()
+
+    for i in range(length):
+        # generate column and according value to update
         column = to_be_updated_reactions[i].get_name()
         value = to_be_updated_reactions[i].get_count()
 
-        update_stmt = f"UPDATE {table} SET {column} = {value} WHERE {platform_post_ID(table)} = {post_id}"
-        # print(update_stmt)
+        # TODO: only update columns that have different values, ignore values with the same value
 
+        # generate update statement for each index a.k.a each column and its value
+        update_stmt = f"UPDATE {table} SET {column} = {value} WHERE post_id = {post_id}"
+
+        # update EACH column, one by one
         mycursor.execute(update_stmt)
         connection.commit()
     
     mycursor.close()
     connection.close()
 
-def insert_values(table, to_be_updated_columns):
-    connection = connect_to_database(user_info.current_user.database)
-    if connection == False:
-        return False
+def insert_values(table, post_id, employee_name, to_be_updated_reactions):
+    # column_and_value_pairs 
     
-    mycursor = connection.cursor()
-
-    post_id = to_be_updated_columns[0]
-    employee_name = to_be_updated_columns[1]
-
-    columns = [platform_post_ID(table), "employee_name"]
-    values = [post_id, f"'{employee_name}'"]
-
-    for each_reaction in to_be_updated_columns[2:]:
+    columns = ["post_id", "employee_name"]
+    values = [mysql_varchar(post_id), mysql_varchar(employee_name)]
+    
+    # generate a list of columns and their according values
+    for each_reaction in to_be_updated_reactions:
         name = each_reaction.get_name()
         count = each_reaction.get_count()
 
         columns.append(name)
         values.append(count)
-    
+    print(f"columns = {columns}")
+    print(f"values = {values}")
+    # convert the previously generated lists to comma-separated strings
     columns = list_to_cs_string(columns)
     values = list_to_cs_string(values)
 
+    # generate insert statement from the columns and their corresponding values
     insert_smt = f"INSERT INTO {table} ({columns}) VALUES ({values})"
-    # print(insert_smt)
+    print(insert_smt)
+    # open connection to database
+    connection = connect_to_database(constants.DATABASE)
+    mycursor = connection.cursor()
 
+    # execute the insert statement
     mycursor.execute(insert_smt)
     connection.commit()
 
+    # explicitly close the connection
     mycursor.close()
     connection.close()
 
-    return True
+def post_id_is_in_table(entered_post_id, table):
+    list_of_post_ids = get_existing_post_ids(table)
+    if entered_post_id in list_of_post_ids:
+        return True
+    else:
+        return False
+
+
+def create_column_and_value_pairs(post_id, employee_name, to_be_updated_reactions):
+    pairs = {"post_id": post_id,
+            "employee_name": employee_name}
+            
 
 def main():
-    get_existing_post_ids("Facebook")
+    get_employee_name("Facebook", "1")
 
+    
 if __name__ == "__main__":
     main()
 
